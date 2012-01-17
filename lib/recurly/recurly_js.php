@@ -62,9 +62,10 @@ class Recurly_js
   }
 
   // Create a signature for a one-time transaction for the given $accountCode
-  public static function signSubscription($accountCode)
+  public static function signSubscription($planCode, $accountCode)
   {
     return self::_generateSignature(self::SUBSCRIPTION_CREATE, array(
+      'plan_code' => $planCode,
       'account_code' => $accountCode
     ));
   }
