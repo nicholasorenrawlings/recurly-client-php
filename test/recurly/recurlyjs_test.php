@@ -2,13 +2,14 @@
 
 class Recurly_jsMock extends Recurly_js {
   // Overload time so we can mock
+  function utc_timestamp() {
+    return "2012-02-21T12:34:56Z";
+  }
+}
+class Recurly_jsResponseMock extends Recurly_jsResponse {
+  // Overload time so we can mock
   function time_difference($timestamp) {
     return 1024;
-  }
-
-  // Expose a protected static method for testing
-  function testGenerateSignature($claim, $values, $timestamp = null) {
-    return Recurly_js::_generateSignature($claim, $values, $timestamp);
   }
 }
 
@@ -21,11 +22,18 @@ class Recurly_RecurlyjsTestCase extends UnitTestCase {
   function tearDown() {
   }
 
-  function testVerifySubscriptionResult() {
-    Recurly_js::$privateKey = "c8b27bb177534f8da94e707356fe5013";
-    $verification = new Recurly_jsMock(array(
-      'signature' => '42f18ee561113ed06c806889b4f2f9ee19f813ff-1313727371',
-      'account_code' => '123',
+  function testGenerateSignatureSimple() {
+    $recurly_js = new Recurly_jsMock(array(
+      'account' => array('account_code' => '123')
+    ));
+    $signature = $recurly_js->generateSignature();
+
+    $this->assertEqual($signature, "dbc8c01277f42a055f558f813b707b8afb1e0d0d|account%5Baccount_code%5D=123&time=2012-02-21T12%3A34%3A56Z");
+  }
+
+  function testGenerateSignatureComplex() {
+    $recurly_js = new Recurly_jsMock(array(
+      'account' => array('account_code' => '123'),
       'plan_code' => 'gold',
       'add_ons' => array(
         array('add_on_code'=>'extra','quantity'=>5),
@@ -33,49 +41,19 @@ class Recurly_RecurlyjsTestCase extends UnitTestCase {
       ),
       'quantity' => 1
     ));
-    $verification->verifySubscription();
-    $this->pass();
-  }
-  
-  function testVerifyTransactionResult() {
-    Recurly_js::$privateKey = "c8b27bb177534f8da94e707356fe5013";
-    $verification = new Recurly_jsMock(array(
-      'signature' => '2eda29820cf6dd8276f492b2eba3d7c831fad1a4-1313727371',
-      'account_code' => '123',
-      'currency' => 'USD',
-      'amount_in_cents' => 5000,
-      'uuid' => '922ee630daa240da983bdac150d001a1'
-    ));
-    $verification->verifyTransaction();
-    $this->pass();
+    $signature = $recurly_js->generateSignature();
+
+    $this->assertEqual($signature, "e5cf1025288de4204e7bba35f52fe77579360f67|account%5Baccount_code%5D=123&add_ons%5B0%5D%5Badd_on_code%5D=extra&" .
+                                   "add_ons%5B0%5D%5Bquantity%5D=5&add_ons%5B1%5D%5Badd_on_code%5D=bonus&add_ons%5B1%5D%5Bquantity%5D=2&" .
+                                   "plan_code=gold&quantity=1&time=2012-02-21T12%3A34%3A56Z");
   }
 
-  // Timestamp too old
-  function testVerifyTransactionException() {
-    $this->expectException();
-    Recurly_js::$privateKey = "c8b27bb177534f8da94e707356fe5013";
-    $verification = new Recurly_js(array(
-      'signature' => '2eda29820cf6dd8276f492b2eba3d7c831fad1a4-1313727371',
-      'account_code' => '123',
-      'currency' => 'USD',
-      'amount_in_cents' => 5000,
-      'uuid' => '922ee630daa240da983bdac150d001a1'
-    ));
-    $verification->verifyTransaction();
-  }
-
-  function testGenerateSignatureTransaction() {
-    $signature = Recurly_jsMock::testGenerateSignature('transactioncreate', 
-      array(
-        'account_code' => '123',
-        'amount_in_cents' => 5000,
-        'currency' => 'USD'), 
-      1313727561);
-    $this->assertEqual($signature, "ccedb6a88e15cbec07187d6d21ff0041bc1fbc94-1313727561");
-  }
-
-  function testGenerateSignatureBillingInfo() {
-    $signature = Recurly_jsMock::testGenerateSignature('billinginfoupdate', array('account_code' => '123'), 1313727561);
-    $this->assertEqual($signature, "824c2ac45c66236c76bd746998a0e050836c1c3e-1313727561");
+  function testVerifyResult() {
+    $signature = '332fe46229227d9141c24a3d741666458874c05a|account[account_code]=112358132134&timestamp=2012-02-21T12%3A34%3A56Z';
+    $recurly_js = new Recurly_jsResponseMock($signature);
+    $results = $recurly_js->getResults();
+    print_r($results);
+    $this->assertEqual($results['account']['account_code'], "112358132134");
+    $this->assertEqual($results['timestamp'], "2012-02-21T12:34:56Z");
   }
 }

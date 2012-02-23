@@ -36,4 +36,5 @@ require_once(dirname(__FILE__) . '/recurly/transaction_list.php');
 
 require_once(dirname(__FILE__) . '/recurly/push_notification.php');
 require_once(dirname(__FILE__) . '/recurly/recurly_js.php');
+require_once(dirname(__FILE__) . '/recurly/recurly_js_response.php');
 require_once(dirname(__FILE__) . '/recurly/util/hmac_hash.php');

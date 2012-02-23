@@ -1,6 +1,8 @@
 # Recurly PHP Client Library CHANGELOG
 
+## Version 2.0.8 (February 22, 2012)
 
+* Revised Recurly.js signature method.
 * Better parsing of transaction errors on one-time transaction requests.
 * Parse an array of plan_codes as strings in the coupon response.
 
